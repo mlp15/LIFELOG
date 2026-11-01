@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LIFELOG - Personal Journal & Life Tracker</title>
-  
+  <title>LIFELOG - Modern Personal Journal</title>
+
   <!-- PWA Meta Tags -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#C86D51">
@@ -13,14 +13,70 @@
   <meta name="apple-mobile-web-app-title" content="LIFELOG">
   <link rel="apple-touch-icon" href="icon-192.png">
 
+  <!-- Fonts & External Libraries (Tanpa Build Process) -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <div class="app-shell">
+  <!-- SPINNER LOADING OVERLAY -->
+  <div id="appSpinner" class="spinner-overlay">
+    <div class="loader"></div>
+  </div>
+
+  <!-- AUTHENTICATION SCREEN (WELCOME / LOGIN / REGISTER) -->
+  <div id="authScreen" class="auth-wrapper">
+    <div class="auth-card">
+      <div class="auth-brand">LIFELOG</div>
+      <p class="auth-subtitle" data-i18n="authSubtitle">Jurnal personal, soundtrack hidup, dan pelacak keuangan Anda.</p>
+
+      <div class="auth-tabs">
+        <button id="tabBtnLogin" class="auth-tab-btn active" onclick="switchAuthTab('login')" data-i18n="login">Masuk</button>
+        <button id="tabBtnRegister" class="auth-tab-btn" onclick="switchAuthTab('register')" data-i18n="register">Daftar Akun</button>
+      </div>
+
+      <!-- Form Login -->
+      <form id="loginForm" class="auth-form" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label data-i18n="email">Email</label>
+          <input type="email" id="loginEmail" class="form-control" placeholder="nama@email.com" required>
+        </div>
+        <div class="form-group">
+          <label data-i18n="password">Kata Sandi</label>
+          <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px;" data-i18n="submitLogin">Masuk ke LIFELOG</button>
+      </form>
+
+      <!-- Form Register -->
+      <form id="registerForm" class="auth-form hidden" onsubmit="handleRegister(event)">
+        <div class="form-group">
+          <label data-i18n="fullName">Nama Lengkap</label>
+          <input type="text" id="regFullName" class="form-control" placeholder="Nama Anda" required>
+        </div>
+        <div class="form-group">
+          <label data-i18n="email">Email</label>
+          <input type="email" id="regEmail" class="form-control" placeholder="nama@email.com" required>
+        </div>
+        <div class="form-group">
+          <label data-i18n="password">Kata Sandi</label>
+          <input type="password" id="regPassword" class="form-control" placeholder="Minimal 6 karakter" required minlength="6">
+        </div>
+        <div class="form-group">
+          <label data-i18n="confirmPassword">Konfirmasi Kata Sandi</label>
+          <input type="password" id="regConfirmPassword" class="form-control" placeholder="Ulangi kata sandi" required minlength="6">
+        </div>
+        <button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px;" data-i18n="submitRegister">Buat Akun Baru</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MAIN APPLICATION SHELL -->
+  <div id="appShell" class="app-shell hidden">
     
-    <!-- Sidebar Navigasi Desktop -->
+    <!-- Sidebar Navigation Desktop -->
     <aside class="desktop-sidebar">
       <div class="brand">LIFELOG</div>
       <nav class="sidebar-menu">
@@ -37,21 +93,20 @@
       </button>
     </aside>
 
-    <!-- Area Utama -->
+    <!-- Main Dynamic View Container -->
     <main class="main-content">
 
       <!-- 1. HOME DASHBOARD -->
       <section id="page-home" class="page-view active">
         <header class="app-header">
           <div class="user-profile">
-            <div class="avatar" id="userAvatar">M</div>
+            <div class="avatar" id="userAvatar">U</div>
             <div class="user-info">
               <div class="date" id="currentFullDate">Sabtu, 31 Oktober 2026</div>
-              <div class="name" id="userGreeting">Halo, Maya 👋</div>
+              <div class="name" id="userGreeting">Halo 👋</div>
             </div>
           </div>
           <div class="header-actions">
-            <button id="pwaInstallBtn" class="btn-primary-sm hidden">📥 Install App</button>
             <button class="icon-btn" onclick="switchTab('settings')">⚙️</button>
           </div>
         </header>
@@ -59,15 +114,17 @@
         <div class="content-body">
           <div class="date-strip" id="homeDateStrip"></div>
 
-          <div class="hero-banner" id="heroSoundtrackCard">
-            <div class="hero-tag">🎵 Soundtrack Hari Ini</div>
-            <div class="hero-title" id="heroSongTitle">Belum ada lagu tercatat</div>
-            <div class="hero-sub" id="heroSongSub">Abadikan momen Anda hari ini</div>
+          <!-- Hero Soundtrack Player -->
+          <div class="hero-banner">
+            <div class="hero-tag" data-i18n="heroSoundtrackTag">🎵 Soundtrack Terkini</div>
+            <div class="hero-title" id="heroSongTitle">Belum Ada Soundtrack Selected</div>
+            <div class="hero-sub" id="heroSongSub">Pilih memori untuk mendengarkan lagu berkesan Anda.</div>
+            <div id="heroSpotifyPlayer" class="spotify-embed-container" style="margin-top: 12px;"></div>
           </div>
 
           <div class="section-title">
             <span data-i18n="recentMemories">Kenangan Terbaru</span>
-            <input type="text" id="homeSearchInput" class="search-input" placeholder="🔍 Cari kenangan..." oninput="renderHomeFeed()">
+            <input type="text" id="homeSearchInput" class="search-input" placeholder="🔍 Cari..." oninput="renderHomeFeed()">
           </div>
 
           <div id="homeFeedContainer" class="feed-grid"></div>
@@ -78,10 +135,10 @@
       <section id="page-memories" class="page-view">
         <header class="app-header">
           <div>
-            <h1 class="page-title">Jurnal Kenangan</h1>
+            <h1 class="page-title" data-i18n="memoriesTitle">Jurnal Kenangan</h1>
             <div class="page-sub" id="memoriesCountSub">0 cerita tersimpan</div>
           </div>
-          <button class="btn-primary-sm" onclick="openAddMemoryModal()">+ Tambah</button>
+          <button class="btn-primary-sm" onclick="openAddMemoryModal()">+ <span data-i18n="add">Tambah</span></button>
         </header>
 
         <div class="content-body">
@@ -90,7 +147,7 @@
           </div>
 
           <div class="chips-scroll" id="moodFilterChips">
-            <button class="chip-btn active" onclick="filterMemoriesByMood('ALL', this)">Semua Mood</button>
+            <button class="chip-btn active" onclick="filterMemoriesByMood('ALL', this)" data-i18n="moodAll">Semua Mood</button>
             <button class="chip-btn" onclick="filterMemoriesByMood('Senang', this)">😊 Senang</button>
             <button class="chip-btn" onclick="filterMemoriesByMood('Tenang', this)">☕ Tenang</button>
             <button class="chip-btn" onclick="filterMemoriesByMood('Nostalgia', this)">🌧️ Nostalgia</button>
@@ -105,7 +162,7 @@
       <section id="page-detail" class="page-view">
         <header class="app-header">
           <button class="icon-btn" onclick="switchTab('memories')">←</button>
-          <div class="page-title" style="font-size:16px;">Detail Kenangan</div>
+          <div class="page-title" style="font-size:16px;" data-i18n="detailTitle">Detail Kenangan</div>
           <div class="header-actions">
             <button class="icon-btn" id="btnEditMemory">✏️</button>
             <button class="icon-btn" id="btnDeleteMemory" style="color:#DC2626;">🗑️</button>
@@ -119,8 +176,8 @@
       <section id="page-timeline" class="page-view">
         <header class="app-header">
           <div>
-            <h1 class="page-title">Garis Waktu</h1>
-            <div class="page-sub">Kenangan Berdasarkan Urutan Tanggal</div>
+            <h1 class="page-title" data-i18n="timelineTitle">Garis Waktu</h1>
+            <div class="page-sub" data-i18n="timelineSub">Kronologi Berdasarkan Urutan Tanggal</div>
           </div>
         </header>
 
@@ -148,30 +205,25 @@
         <header class="app-header">
           <div>
             <h1 class="page-title">Life Insights</h1>
-            <div class="page-sub">Statistik Kebiasaan & Momen</div>
+            <div class="page-sub" data-i18n="insightsSub">Statistik Kebiasaan & Catatan</div>
           </div>
         </header>
 
         <div class="content-body">
           <div class="insights-stats-grid">
             <div class="stat-card">
-              <div class="stat-label">Total Kenangan</div>
+              <div class="stat-label" data-i18n="totalMemories">Total Kenangan</div>
               <div class="stat-value" id="statTotalMemories">0</div>
             </div>
             <div class="stat-card">
-              <div class="stat-label">Mood Dominan</div>
+              <div class="stat-label" data-i18n="dominantMood">Mood Dominan</div>
               <div class="stat-value" id="statDominantMood">-</div>
             </div>
           </div>
 
           <div class="card-hifi-static">
-            <div class="card-title">📍 Lokasi Sering Dikunjungi</div>
+            <div class="card-title" data-i18n="topLocations">📍 Lokasi Sering Dikunjungi</div>
             <div id="statTopLocationsList" class="stat-list"></div>
-          </div>
-
-          <div class="card-hifi-static" style="margin-top:16px;">
-            <div class="card-title">🎵 Soundtrack Terpopuler</div>
-            <div id="statTopSongsList" class="stat-list"></div>
           </div>
         </div>
       </section>
@@ -181,18 +233,31 @@
         <header class="app-header">
           <div>
             <h1 class="page-title">Spending Tracker</h1>
-            <div class="page-sub">Pelacak Pengeluaran Harian</div>
+            <div class="page-sub" data-i18n="spendingSub">Visualisasi & Pelacak Keuangan</div>
           </div>
-          <button class="btn-primary-sm" onclick="openAddExpenseModal()">+ Transaksi</button>
+          <button class="btn-primary-sm" onclick="openAddExpenseModal()">+ <span data-i18n="addTransaction">Transaksi</span></button>
         </header>
 
         <div class="content-body">
           <div class="spending-hero-card">
-            <div class="spending-label">Total Pengeluaran Bulan Ini</div>
+            <div class="spending-label" data-i18n="totalSpending">Total Pengeluaran</div>
             <div class="spending-amount" id="totalSpendingAmount">Rp 0</div>
+            <div class="spending-meta-grid" style="margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; border-top: 1px solid rgba(255,255,255,0.15); padding-top: 10px; font-size: 12px;">
+              <div><span data-i18n="averageSpending">Rata-rata:</span> <strong id="avgSpendingText">Rp 0</strong></div>
+              <div><span data-i18n="highestSpending">Terbesar:</span> <strong id="maxSpendingText">Rp 0</strong></div>
+            </div>
           </div>
 
-          <div class="section-title">Riwayat Transaksi</div>
+          <div class="card-hifi-static" style="margin-bottom: 20px;">
+            <div class="section-title" style="margin-bottom: 10px;">
+              <span data-i18n="chartTitle">Grafik Analisis Pengeluaran</span>
+            </div>
+            <div style="position: relative; height: 220px; width: 100%;">
+              <canvas id="spendingChartCanvas"></canvas>
+            </div>
+          </div>
+
+          <div class="section-title" data-i18n="historyTitle">Riwayat Transaksi</div>
           <div id="spendingListContainer" class="spending-list"></div>
         </div>
       </section>
@@ -201,23 +266,28 @@
       <section id="page-settings" class="page-view">
         <header class="app-header">
           <div>
-            <h1 class="page-title">Settings</h1>
-            <div class="page-sub">Pengaturan Aplikasi</div>
+            <h1 class="page-title" data-i18n="settingsTitle">Settings</h1>
+            <div class="page-sub" data-i18n="settingsSub">Pengaturan Akun & Bahasa</div>
           </div>
+          <button class="btn-danger-sm" onclick="handleLogout()" data-i18n="logout">Keluar</button>
         </header>
 
         <div class="content-body">
           <div class="settings-card">
-            <div class="setting-title">👤 Profil Pengguna</div>
+            <div class="setting-title" data-i18n="userProfile">👤 Profil Pengguna</div>
             <div class="form-group" style="margin-top:12px;">
-              <label>Nama Pengguna</label>
+              <label data-i18n="fullName">Nama Lengkap</label>
               <input type="text" id="settingUserNameInput" class="form-control" placeholder="Nama Anda...">
             </div>
-            <button class="btn-primary-sm" onclick="saveUserProfile()" style="margin-top:8px;">Simpan Profil</button>
+            <div class="form-group">
+              <label data-i18n="email">Email</label>
+              <input type="text" id="settingUserEmailInput" class="form-control" disabled style="opacity: 0.7;">
+            </div>
+            <button class="btn-primary-sm" onclick="saveUserProfile()" style="margin-top:4px;" data-i18n="saveProfile">Simpan Profil</button>
           </div>
 
           <div class="settings-card" style="margin-top:16px;">
-            <div class="setting-title">🌐 Bahasa (Language)</div>
+            <div class="setting-title" data-i18n="selectLanguage">🌐 Pilih Bahasa (Language)</div>
             <div class="lang-options">
               <button class="lang-btn" onclick="setLanguage('id')">🇮🇩 Bahasa Indonesia</button>
               <button class="lang-btn" onclick="setLanguage('en')">🇬🇧 English</button>
@@ -225,21 +295,15 @@
               <button class="lang-btn" onclick="setLanguage('ja')">🇯🇵 Japanese (日本語)</button>
             </div>
           </div>
-
-          <div class="settings-card" style="margin-top:16px; border-color:#FCA5A5;">
-            <div class="setting-title" style="color:#DC2626;">⚠️ Reset Data</div>
-            <p style="font-size:12px; color:var(--text-muted); margin:8px 0 12px;">Hapus seluruh data lokal kenangan & transaksi.</p>
-            <button class="btn-danger-sm" onclick="clearAllData()">Reset Seluruh Data</button>
-          </div>
         </div>
       </section>
 
     </main>
 
-    <!-- FAB Button -->
+    <!-- FAB Button Mobile -->
     <button class="fab-btn" onclick="openAddMemoryModal()">+</button>
 
-    <!-- Bottom Nav Mobile -->
+    <!-- Mobile Bottom Nav -->
     <nav class="mobile-bottom-nav">
       <button class="nav-link active" onclick="switchTab('home')"><span class="icon">🏠</span><span data-i18n="navHome">Home</span></button>
       <button class="nav-link" onclick="switchTab('memories')"><span class="icon">📝</span><span data-i18n="navMemories">Memories</span></button>
@@ -253,42 +317,42 @@
   <div id="modalMemoryForm" class="modal-overlay">
     <div class="modal-card">
       <div class="modal-header">
-        <h3 id="modalMemoryFormTitle" class="modal-title">Kenangan Baru</h3>
+        <h3 id="modalMemoryFormTitle" class="modal-title" data-i18n="newMemory">Kenangan Baru</h3>
         <button class="icon-btn" onclick="closeModal('modalMemoryForm')">✕</button>
       </div>
       <form id="memoryForm" onsubmit="handleSaveMemory(event)">
         <input type="hidden" id="memoryIdInput">
         
         <div class="form-group">
-          <label>Unggah Foto Momen</label>
+          <label data-i18n="uploadPhoto">Unggah Foto Momen (Privat & Aman)</label>
           <div class="photo-picker-box" onclick="document.getElementById('memoryImageFile').click()">
             <img id="memoryImagePreview" class="image-preview hidden" src="" alt="Preview">
             <div id="photoPlaceholderText" class="photo-placeholder">
               <span style="font-size:24px;">📷</span>
-              <span>Pilih foto dari Galeri</span>
+              <span data-i18n="chooseGallery">Pilih foto dari Galeri</span>
             </div>
           </div>
           <input type="file" id="memoryImageFile" accept="image/*" class="hidden" onchange="handlePhotoSelect(event)">
         </div>
 
         <div class="form-group">
-          <label>Judul Momen *</label>
+          <label data-i18n="titleLabel">Judul Momen *</label>
           <input type="text" id="memoryTitleInput" class="form-control" placeholder="Judul kenangan..." required>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label>Tanggal *</label>
+            <label data-i18n="dateLabel">Tanggal *</label>
             <input type="date" id="memoryDateInput" class="form-control" required>
           </div>
           <div class="form-group">
-            <label>Lokasi</label>
+            <label data-i18n="locationLabel">Lokasi</label>
             <input type="text" id="memoryLocationInput" class="form-control" placeholder="Misal: Bandung">
           </div>
         </div>
 
         <div class="form-group">
-          <label>Suasana Hati (Mood)</label>
+          <label data-i18n="moodLabel">Suasana Hati (Mood)</label>
           <select id="memoryMoodSelect" class="form-control">
             <option value="Senang">😊 Senang</option>
             <option value="Tenang">☕ Tenang</option>
@@ -298,18 +362,24 @@
         </div>
 
         <div class="form-group">
-          <label>Soundtrack / Lagu (Judul - Artis)</label>
-          <input type="text" id="memorySongInput" class="form-control" placeholder="Misal: Yellow - Coldplay">
+          <label data-i18n="soundtrackSearchLabel">Cari Soundtrack Spotify (Artis / Judul Lagu)</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="spotifySearchInput" class="form-control" placeholder="Ketik nama lagu atau artis...">
+            <button type="button" class="btn-primary-sm" onclick="searchSpotifyTracks()" data-i18n="search">Cari</button>
+          </div>
+          <input type="hidden" id="selectedSpotifyTrackId">
+          <input type="hidden" id="selectedSpotifySongTitle">
+          <div id="spotifySearchResults" class="spotify-results-dropdown hidden"></div>
         </div>
 
         <div class="form-group">
-          <label>Cerita Jurnal</label>
+          <label data-i18n="journalStory">Cerita Jurnal</label>
           <textarea id="memoryStoryInput" class="form-control" rows="4" placeholder="Tuliskan cerita berkesan Anda..."></textarea>
         </div>
 
         <div class="modal-footer">
-          <button type="button" class="btn-secondary" onclick="closeModal('modalMemoryForm')">Batal</button>
-          <button type="submit" class="btn-primary">Simpan Kenangan</button>
+          <button type="button" class="btn-secondary" onclick="closeModal('modalMemoryForm')" data-i18n="cancel">Batal</button>
+          <button type="submit" class="btn-primary" data-i18n="saveMemory">Simpan Kenangan</button>
         </div>
       </form>
     </div>
@@ -319,42 +389,44 @@
   <div id="modalExpenseForm" class="modal-overlay">
     <div class="modal-card">
       <div class="modal-header">
-        <h3 id="modalExpenseFormTitle" class="modal-title">Tambah Pengeluaran</h3>
+        <h3 id="modalExpenseFormTitle" class="modal-title" data-i18n="addExpenseTitle">Tambah Pengeluaran</h3>
         <button class="icon-btn" onclick="closeModal('modalExpenseForm')">✕</button>
       </div>
       <form id="expenseForm" onsubmit="handleSaveExpense(event)">
         <input type="hidden" id="expenseIdInput">
 
         <div class="form-group">
-          <label>Jumlah Pengeluaran (Rp) *</label>
+          <label data-i18n="amountLabel">Jumlah Pengeluaran (Rp) *</label>
           <input type="number" id="expenseAmountInput" class="form-control" placeholder="0" required>
         </div>
 
         <div class="form-group">
-          <label>Keterangan / Catatan *</label>
+          <label data-i18n="noteLabel">Keterangan / Catatan *</label>
           <input type="text" id="expenseNoteInput" class="form-control" placeholder="Misal: Kopi Kenangan" required>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label>Kategori</label>
+            <label data-i18n="categoryLabel">Kategori</label>
             <select id="expenseCategorySelect" class="form-control">
-              <option value="Makanan & Kafe">🍔 Makanan & Kafe</option>
-              <option value="Transportasi">🚗 Transportasi</option>
-              <option value="Hiburan">🎟️ Hiburan</option>
-              <option value="Belanja">🛒 Belanja</option>
-              <option value="Lainnya">📦 Lainnya</option>
+              <option value="Food & Drinks">🍔 Food & Drinks</option>
+              <option value="Transportation">🚗 Transportation</option>
+              <option value="Shopping">🛒 Shopping</option>
+              <option value="Entertainment">🎟️ Entertainment</option>
+              <option value="Health">🏥 Health</option>
+              <option value="Education">🎓 Education</option>
+              <option value="Others">📦 Others</option>
             </select>
           </div>
           <div class="form-group">
-            <label>Tanggal *</label>
+            <label data-i18n="dateLabel">Tanggal *</label>
             <input type="date" id="expenseDateInput" class="form-control" required>
           </div>
         </div>
 
         <div class="modal-footer">
-          <button type="button" class="btn-secondary" onclick="closeModal('modalExpenseForm')">Batal</button>
-          <button type="submit" class="btn-primary">Simpan Transaksi</button>
+          <button type="button" class="btn-secondary" onclick="closeModal('modalExpenseForm')" data-i18n="cancel">Batal</button>
+          <button type="submit" class="btn-primary" data-i18n="saveTransaction">Simpan Transaksi</button>
         </div>
       </form>
     </div>
@@ -362,37 +434,12 @@
 
   <script src="app.js"></script>
   <script>
-    // Register Service Worker
+    // Register PWA Service Worker
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./service-worker.js')
-          .then((reg) => console.log('LIFELOG SW registered:', reg.scope))
-          .catch((err) => console.log('LIFELOG SW registration failed:', err));
-      });
-    }
-
-    // PWA Installation Trigger
-    let deferredPrompt;
-    const installBtn = document.getElementById('pwaInstallBtn');
-
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      if (installBtn) installBtn.classList.remove('hidden');
-    });
-
-    if (installBtn) {
-      installBtn.addEventListener('click', () => {
-        if (deferredPrompt) {
-          deferredPrompt.prompt();
-          deferredPrompt.userChoice.then((choiceResult) => {
-            if (choiceResult.outcome === 'accepted') {
-              console.log('User accepted PWA installation');
-            }
-            deferredPrompt = null;
-            installBtn.classList.add('hidden');
-          });
-        }
+          .then(reg => console.log('LIFELOG Service Worker Active:', reg.scope))
+          .catch(err => console.error('PWA SW Fail:', err));
       });
     }
   </script>
