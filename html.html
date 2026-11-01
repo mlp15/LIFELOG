@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="id" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LIFELOG - Personal Journal & Life Tracker</title>
+  
+  <!-- PWA Meta Tags -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#C86D51">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="LIFELOG">
+  <link rel="apple-touch-icon" href="icon-192.png">
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="app-shell">
+    
+    <!-- Sidebar Navigasi Desktop -->
+    <aside class="desktop-sidebar">
+      <div class="brand">LIFELOG</div>
+      <nav class="sidebar-menu">
+        <button class="nav-item active" onclick="switchTab('home')">🏠 <span data-i18n="navHome">Home</span></button>
+        <button class="nav-item" onclick="switchTab('memories')">📝 <span data-i18n="navMemories">Memories</span></button>
+        <button class="nav-item" onclick="switchTab('timeline')">⏱️ <span data-i18n="navTimeline">Timeline</span></button>
+        <button class="nav-item" onclick="switchTab('soundtrack')">🎵 <span data-i18n="navMusic">Soundtrack</span></button>
+        <button class="nav-item" onclick="switchTab('insights')">📊 <span data-i18n="navInsights">Insights</span></button>
+        <button class="nav-item" onclick="switchTab('spending')">💳 <span data-i18n="navSpending">Spending</span></button>
+        <button class="nav-item" onclick="switchTab('settings')">⚙️ <span data-i18n="navSettings">Settings</span></button>
+      </nav>
+      <button class="btn-primary flex-center" onclick="openAddMemoryModal()" style="margin-top:auto; width:100%;">
+        + <span data-i18n="newMemory">Memory Baru</span>
+      </button>
+    </aside>
+
+    <!-- Area Utama -->
+    <main class="main-content">
+
+      <!-- 1. HOME DASHBOARD -->
+      <section id="page-home" class="page-view active">
+        <header class="app-header">
+          <div class="user-profile">
+            <div class="avatar" id="userAvatar">M</div>
+            <div class="user-info">
+              <div class="date" id="currentFullDate">Sabtu, 31 Oktober 2026</div>
+              <div class="name" id="userGreeting">Halo, Maya 👋</div>
+            </div>
+          </div>
+          <div class="header-actions">
+            <button id="pwaInstallBtn" class="btn-primary-sm hidden">📥 Install App</button>
+            <button class="icon-btn" onclick="switchTab('settings')">⚙️</button>
+          </div>
+        </header>
+
+        <div class="content-body">
+          <div class="date-strip" id="homeDateStrip"></div>
+
+          <div class="hero-banner" id="heroSoundtrackCard">
+            <div class="hero-tag">🎵 Soundtrack Hari Ini</div>
+            <div class="hero-title" id="heroSongTitle">Belum ada lagu tercatat</div>
+            <div class="hero-sub" id="heroSongSub">Abadikan momen Anda hari ini</div>
+          </div>
+
+          <div class="section-title">
+            <span data-i18n="recentMemories">Kenangan Terbaru</span>
+            <input type="text" id="homeSearchInput" class="search-input" placeholder="🔍 Cari kenangan..." oninput="renderHomeFeed()">
+          </div>
+
+          <div id="homeFeedContainer" class="feed-grid"></div>
+        </div>
+      </section>
+
+      <!-- 2. MEMORIES LIST -->
+      <section id="page-memories" class="page-view">
+        <header class="app-header">
+          <div>
+            <h1 class="page-title">Jurnal Kenangan</h1>
+            <div class="page-sub" id="memoriesCountSub">0 cerita tersimpan</div>
+          </div>
+          <button class="btn-primary-sm" onclick="openAddMemoryModal()">+ Tambah</button>
+        </header>
+
+        <div class="content-body">
+          <div class="search-bar-row">
+            <input type="text" id="memoriesSearchInput" class="search-input" placeholder="🔍 Cari judul, cerita, atau lokasi..." oninput="renderMemoriesPage()">
+          </div>
+
+          <div class="chips-scroll" id="moodFilterChips">
+            <button class="chip-btn active" onclick="filterMemoriesByMood('ALL', this)">Semua Mood</button>
+            <button class="chip-btn" onclick="filterMemoriesByMood('Senang', this)">😊 Senang</button>
+            <button class="chip-btn" onclick="filterMemoriesByMood('Tenang', this)">☕ Tenang</button>
+            <button class="chip-btn" onclick="filterMemoriesByMood('Nostalgia', this)">🌧️ Nostalgia</button>
+            <button class="chip-btn" onclick="filterMemoriesByMood('Bersemangat', this)">🔥 Semangat</button>
+          </div>
+
+          <div id="memoriesListContainer" class="feed-grid"></div>
+        </div>
+      </section>
+
+      <!-- 3. MEMORY DETAIL -->
+      <section id="page-detail" class="page-view">
+        <header class="app-header">
+          <button class="icon-btn" onclick="switchTab('memories')">←</button>
+          <div class="page-title" style="font-size:16px;">Detail Kenangan</div>
+          <div class="header-actions">
+            <button class="icon-btn" id="btnEditMemory">✏️</button>
+            <button class="icon-btn" id="btnDeleteMemory" style="color:#DC2626;">🗑️</button>
+          </div>
+        </header>
+
+        <div class="content-body" id="memoryDetailBody"></div>
+      </section>
+
+      <!-- 4. TIMELINE -->
+      <section id="page-timeline" class="page-view">
+        <header class="app-header">
+          <div>
+            <h1 class="page-title">Garis Waktu</h1>
+            <div class="page-sub">Kenangan Berdasarkan Urutan Tanggal</div>
+          </div>
+        </header>
+
+        <div class="content-body">
+          <div class="timeline-container" id="timelineStreamContainer"></div>
+        </div>
+      </section>
+
+      <!-- 5. SOUNDTRACK OF LIFE -->
+      <section id="page-soundtrack" class="page-view">
+        <header class="app-header">
+          <div>
+            <h1 class="page-title">Soundtrack of Life</h1>
+            <div class="page-sub" id="soundtrackCountSub">0 Lagu Terhubung</div>
+          </div>
+        </header>
+
+        <div class="content-body">
+          <div id="soundtrackListContainer" class="soundtrack-list"></div>
+        </div>
+      </section>
+
+      <!-- 6. LIFE INSIGHTS -->
+      <section id="page-insights" class="page-view">
+        <header class="app-header">
+          <div>
+            <h1 class="page-title">Life Insights</h1>
+            <div class="page-sub">Statistik Kebiasaan & Momen</div>
+          </div>
+        </header>
+
+        <div class="content-body">
+          <div class="insights-stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Total Kenangan</div>
+              <div class="stat-value" id="statTotalMemories">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Mood Dominan</div>
+              <div class="stat-value" id="statDominantMood">-</div>
+            </div>
+          </div>
+
+          <div class="card-hifi-static">
+            <div class="card-title">📍 Lokasi Sering Dikunjungi</div>
+            <div id="statTopLocationsList" class="stat-list"></div>
+          </div>
+
+          <div class="card-hifi-static" style="margin-top:16px;">
+            <div class="card-title">🎵 Soundtrack Terpopuler</div>
+            <div id="statTopSongsList" class="stat-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 7. SPENDING TRACKER -->
+      <section id="page-spending" class="page-view">
+        <header class="app-header">
+          <div>
+            <h1 class="page-title">Spending Tracker</h1>
+            <div class="page-sub">Pelacak Pengeluaran Harian</div>
+          </div>
+          <button class="btn-primary-sm" onclick="openAddExpenseModal()">+ Transaksi</button>
+        </header>
+
+        <div class="content-body">
+          <div class="spending-hero-card">
+            <div class="spending-label">Total Pengeluaran Bulan Ini</div>
+            <div class="spending-amount" id="totalSpendingAmount">Rp 0</div>
+          </div>
+
+          <div class="section-title">Riwayat Transaksi</div>
+          <div id="spendingListContainer" class="spending-list"></div>
+        </div>
+      </section>
+
+      <!-- 8. SETTINGS -->
+      <section id="page-settings" class="page-view">
+        <header class="app-header">
+          <div>
+            <h1 class="page-title">Settings</h1>
+            <div class="page-sub">Pengaturan Aplikasi</div>
+          </div>
+        </header>
+
+        <div class="content-body">
+          <div class="settings-card">
+            <div class="setting-title">👤 Profil Pengguna</div>
+            <div class="form-group" style="margin-top:12px;">
+              <label>Nama Pengguna</label>
+              <input type="text" id="settingUserNameInput" class="form-control" placeholder="Nama Anda...">
+            </div>
+            <button class="btn-primary-sm" onclick="saveUserProfile()" style="margin-top:8px;">Simpan Profil</button>
+          </div>
+
+          <div class="settings-card" style="margin-top:16px;">
+            <div class="setting-title">🌐 Bahasa (Language)</div>
+            <div class="lang-options">
+              <button class="lang-btn" onclick="setLanguage('id')">🇮🇩 Bahasa Indonesia</button>
+              <button class="lang-btn" onclick="setLanguage('en')">🇬🇧 English</button>
+              <button class="lang-btn" onclick="setLanguage('ar')">🇸🇦 Arabic (العربية - RTL)</button>
+              <button class="lang-btn" onclick="setLanguage('ja')">🇯🇵 Japanese (日本語)</button>
+            </div>
+          </div>
+
+          <div class="settings-card" style="margin-top:16px; border-color:#FCA5A5;">
+            <div class="setting-title" style="color:#DC2626;">⚠️ Reset Data</div>
+            <p style="font-size:12px; color:var(--text-muted); margin:8px 0 12px;">Hapus seluruh data lokal kenangan & transaksi.</p>
+            <button class="btn-danger-sm" onclick="clearAllData()">Reset Seluruh Data</button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- FAB Button -->
+    <button class="fab-btn" onclick="openAddMemoryModal()">+</button>
+
+    <!-- Bottom Nav Mobile -->
+    <nav class="mobile-bottom-nav">
+      <button class="nav-link active" onclick="switchTab('home')"><span class="icon">🏠</span><span data-i18n="navHome">Home</span></button>
+      <button class="nav-link" onclick="switchTab('memories')"><span class="icon">📝</span><span data-i18n="navMemories">Memories</span></button>
+      <button class="nav-link" onclick="switchTab('timeline')"><span class="icon">⏱️</span><span data-i18n="navTimeline">Timeline</span></button>
+      <button class="nav-link" onclick="switchTab('soundtrack')"><span class="icon">🎵</span><span data-i18n="navMusic">Music</span></button>
+      <button class="nav-link" onclick="switchTab('spending')"><span class="icon">💳</span><span data-i18n="navSpending">Spending</span></button>
+    </nav>
+  </div>
+
+  <!-- MODAL MEMORY FORM -->
+  <div id="modalMemoryForm" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modalMemoryFormTitle" class="modal-title">Kenangan Baru</h3>
+        <button class="icon-btn" onclick="closeModal('modalMemoryForm')">✕</button>
+      </div>
+      <form id="memoryForm" onsubmit="handleSaveMemory(event)">
+        <input type="hidden" id="memoryIdInput">
+        
+        <div class="form-group">
+          <label>Unggah Foto Momen</label>
+          <div class="photo-picker-box" onclick="document.getElementById('memoryImageFile').click()">
+            <img id="memoryImagePreview" class="image-preview hidden" src="" alt="Preview">
+            <div id="photoPlaceholderText" class="photo-placeholder">
+              <span style="font-size:24px;">📷</span>
+              <span>Pilih foto dari Galeri</span>
+            </div>
+          </div>
+          <input type="file" id="memoryImageFile" accept="image/*" class="hidden" onchange="handlePhotoSelect(event)">
+        </div>
+
+        <div class="form-group">
+          <label>Judul Momen *</label>
+          <input type="text" id="memoryTitleInput" class="form-control" placeholder="Judul kenangan..." required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tanggal *</label>
+            <input type="date" id="memoryDateInput" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label>Lokasi</label>
+            <input type="text" id="memoryLocationInput" class="form-control" placeholder="Misal: Bandung">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Suasana Hati (Mood)</label>
+          <select id="memoryMoodSelect" class="form-control">
+            <option value="Senang">😊 Senang</option>
+            <option value="Tenang">☕ Tenang</option>
+            <option value="Nostalgia">🌧️ Nostalgia</option>
+            <option value="Bersemangat">🔥 Bersemangat</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Soundtrack / Lagu (Judul - Artis)</label>
+          <input type="text" id="memorySongInput" class="form-control" placeholder="Misal: Yellow - Coldplay">
+        </div>
+
+        <div class="form-group">
+          <label>Cerita Jurnal</label>
+          <textarea id="memoryStoryInput" class="form-control" rows="4" placeholder="Tuliskan cerita berkesan Anda..."></textarea>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="closeModal('modalMemoryForm')">Batal</button>
+          <button type="submit" class="btn-primary">Simpan Kenangan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL EXPENSE FORM -->
+  <div id="modalExpenseForm" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modalExpenseFormTitle" class="modal-title">Tambah Pengeluaran</h3>
+        <button class="icon-btn" onclick="closeModal('modalExpenseForm')">✕</button>
+      </div>
+      <form id="expenseForm" onsubmit="handleSaveExpense(event)">
+        <input type="hidden" id="expenseIdInput">
+
+        <div class="form-group">
+          <label>Jumlah Pengeluaran (Rp) *</label>
+          <input type="number" id="expenseAmountInput" class="form-control" placeholder="0" required>
+        </div>
+
+        <div class="form-group">
+          <label>Keterangan / Catatan *</label>
+          <input type="text" id="expenseNoteInput" class="form-control" placeholder="Misal: Kopi Kenangan" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Kategori</label>
+            <select id="expenseCategorySelect" class="form-control">
+              <option value="Makanan & Kafe">🍔 Makanan & Kafe</option>
+              <option value="Transportasi">🚗 Transportasi</option>
+              <option value="Hiburan">🎟️ Hiburan</option>
+              <option value="Belanja">🛒 Belanja</option>
+              <option value="Lainnya">📦 Lainnya</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Tanggal *</label>
+            <input type="date" id="expenseDateInput" class="form-control" required>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="closeModal('modalExpenseForm')">Batal</button>
+          <button type="submit" class="btn-primary">Simpan Transaksi</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    // Register Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js')
+          .then((reg) => console.log('LIFELOG SW registered:', reg.scope))
+          .catch((err) => console.log('LIFELOG SW registration failed:', err));
+      });
+    }
+
+    // PWA Installation Trigger
+    let deferredPrompt;
+    const installBtn = document.getElementById('pwaInstallBtn');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      if (installBtn) installBtn.classList.remove('hidden');
+    });
+
+    if (installBtn) {
+      installBtn.addEventListener('click', () => {
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+              console.log('User accepted PWA installation');
+            }
+            deferredPrompt = null;
+            installBtn.classList.add('hidden');
+          });
+        }
+      });
+    }
+  </script>
+</body>
+</html>
