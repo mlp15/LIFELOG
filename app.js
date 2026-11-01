@@ -3,7 +3,7 @@
 // ==========================================
 // 1. SUPABASE CLIENT CONFIGURATION
 // ==========================================
-const SUPABASE_URL = 'https://dmbhsxtlfpxxyvabidar.supabase.co/rest/v1/'; 
+const SUPABASE_URL = 'https://dmbhsxtlfpxxyvabidar.supabase.co'; 
 const SUPABASE_ANON_KEY = 'sb_publishable_xwSAN9nPFf6PwKfV1W15Mw_siNoXroK'; 
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
