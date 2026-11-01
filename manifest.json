@@ -1,0 +1,24 @@
+{
+  "name": "LIFELOG - Modern Personal Journal",
+  "short_name": "LIFELOG",
+  "description": "High-fidelity modern personal digital journal, soundtrack, and spending tracker.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#FAF9F6",
+  "theme_color": "#C86D51",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
